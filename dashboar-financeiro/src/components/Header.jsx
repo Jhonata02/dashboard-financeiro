@@ -18,7 +18,7 @@ const Header = () => {
       <div className="flex items-center space-x-4">
         <button
           onClick={exportToCSV}
-          className="p-2 rounded-full hover:bg-opacity-80 bg-green-600 text-white"
+          className="p-2 rounded-full hover:bg-opacity-80 bg-green-600 text-white cursor-pointer"
           title="Exportar Dados"
         >
           <FaDownload />
@@ -27,7 +27,7 @@ const Header = () => {
         <div className="relative">
           <button
             onClick={() => setShowNotifications(!showNotifications)}
-            className="p-2 rounded-full hover:bg-opacity-80 relative"
+            className="p-2 rounded-full hover:bg-opacity-80 relative cursor-pointer"
             title="Notificações"
           >
             <FaBell />
@@ -47,7 +47,7 @@ const Header = () => {
         
         <button
           onClick={toggleDarkMode}
-          className={`p-2 rounded-full ${darkMode ? 'text-yellow-300' : 'text-gray-600'}`}
+          className={`p-2 rounded-full cursor-pointer ${darkMode ? 'text-yellow-300' : 'text-gray-600'}`}
           title={darkMode ? "Mudar para Modo Claro" : "Mudar para Modo Escuro"}
         >
           {darkMode ? <FaSun /> : <FaMoon />}
