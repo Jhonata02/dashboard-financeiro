@@ -103,7 +103,7 @@ export const FinanceProvider = ({ children }) => {
       setBudgets({
         ...budgets,
         [newExpense.category]: {
-          limit: newExpense.amount * 1.5, // Set a default limit
+          limit: newExpense.amount * 1.5,
           used: newExpense.amount
         }
       });
