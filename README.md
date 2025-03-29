@@ -13,6 +13,7 @@ Uma aplicação web moderna de gerenciamento financeiro desenvolvida com React, 
 - 🔔 Sistema de notificações e alertas
 - 📤 Exportação de dados para CSV
 - 🌓 Suporte a modo claro e escuro
+- 📂 Histórico Mensal
 
 ## 🚀 Tecnologias Utilizadas
 
