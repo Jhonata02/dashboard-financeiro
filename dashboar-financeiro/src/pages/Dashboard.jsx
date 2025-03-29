@@ -15,16 +15,14 @@ ChartJS.register(...registerables);
 
 const Dashboard = () => {
   const { darkMode } = useTheme();
-  const { expenses, income } = useFinance();
-  
-  const expensesByCategory = {};
-  expenses.forEach(expense => {
-    if (expensesByCategory[expense.category]) {
-      expensesByCategory[expense.category] += expense.amount;
-    } else {
-      expensesByCategory[expense.category] = expense.amount;
-    }
-  });
+  const { 
+    expenses, 
+    income, 
+    monthlyHistory, 
+    getLastSixMonthsData, 
+    resetCurrentMonth,
+    chartUpdateTrigger 
+  } = useFinance();
   
   // Gráfico de Despesas por Categoria
   const expensePieData = useMemo(() => {
@@ -48,80 +46,44 @@ const Dashboard = () => {
     };
   }, [expenses]);
 
-  // Gráfico de Receitas vs Despesas
+  // Gráfico de Receitas vs Despesas (usando dados dos últimos 6 meses)
   const incomeVsExpenseData = useMemo(() => {
-    // Agrupa receitas e despesas por mês
-    const monthlyData = {};
+    const sixMonthsData = getLastSixMonthsData();
     
-    // Processando receitas
-    income.forEach(item => {
-      const month = new Date(item.date).toLocaleString('default', { month: 'short' });
-      monthlyData[month] = monthlyData[month] || { income: 0, expenses: 0 };
-      monthlyData[month].income += item.amount;
-    });
-    
-    // Processando despesas
-    expenses.forEach(item => {
-      const month = new Date(item.date).toLocaleString('default', { month: 'short' });
-      monthlyData[month] = monthlyData[month] || { income: 0, expenses: 0 };
-      monthlyData[month].expenses += item.amount;
-    });
-
-    // Ordenando meses e preparando dados
-    const sortedMonths = Object.keys(monthlyData)
-      .sort((a, b) => new Date(`01 ${a}`) - new Date(`01 ${b}`))
-      .slice(-6); // Últimos 6 meses
-
     return {
-      labels: sortedMonths,
+      labels: sixMonthsData.map(data => data.month),
       datasets: [
         {
           label: 'Receitas',
-          data: sortedMonths.map(month => monthlyData[month].income),
+          data: sixMonthsData.map(data => data.income),
           backgroundColor: 'rgba(75, 192, 192, 0.6)',
         },
         {
           label: 'Despesas',
-          data: sortedMonths.map(month => monthlyData[month].expenses),
+          data: sixMonthsData.map(data => data.expenses),
           backgroundColor: 'rgba(255, 99, 132, 0.6)',
         }
       ]
     };
-  }, [income, expenses]);
+  }, [getLastSixMonthsData, chartUpdateTrigger]); // Adicionado chartUpdateTrigger como dependência
   
-  // Gráfico de Tendência de Economia - Dinâmico
+  // Gráfico de Tendência de Economia - Dinâmico (usando dados dos últimos 6 meses)
   const savingsTrendData = useMemo(() => {
-    const monthlyData = {};
+    const sixMonthsData = getLastSixMonthsData();
     
-    // Processando receitas e despesas
-    income.forEach(item => {
-      const month = new Date(item.date).toLocaleString('default', { month: 'short' });
-      monthlyData[month] = (monthlyData[month] || 0) + item.amount;
-    });
-    
-    expenses.forEach(item => {
-      const month = new Date(item.date).toLocaleString('default', { month: 'short' });
-      monthlyData[month] = (monthlyData[month] || 0) - item.amount;
-    });
-
-    // Ordenando meses e preparando dados
-    const sortedMonths = Object.keys(monthlyData)
-      .sort((a, b) => new Date(`01 ${a}`) - new Date(`01 ${b}`))
-      .slice(-6); // Últimos 6 meses
-
     return {
-      labels: sortedMonths,
+      labels: sixMonthsData.map(data => data.month),
       datasets: [
         {
           label: 'Economia',
-          data: sortedMonths.map(month => Math.max(0, monthlyData[month])),
+          data: sixMonthsData.map(data => Math.max(0, data.income - data.expenses)),
           borderColor: 'rgba(54, 162, 235, 1)',
           backgroundColor: 'rgba(54, 162, 235, 0.2)',
           fill: true
         }
       ]
     };
-  }, [income, expenses]);
+  }, [getLastSixMonthsData, chartUpdateTrigger]); // Adicionado chartUpdateTrigger como dependência
   
   const chartOptions = {
     responsive: true,
@@ -157,7 +119,15 @@ const Dashboard = () => {
     <div>
       <h1 className="text-2xl md:text-3xl font-bold mb-6">Dashboard Financeiro</h1>
       
-      <DashboardMetrics />
+      <div className="mb-6 flex justify-between items-center">
+        <DashboardMetrics />
+        <button 
+          onClick={resetCurrentMonth}
+          className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-colors duration-300"
+        >
+          Resetar Mês Atual
+        </button>
+      </div>
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         <ChartContainer title="Despesas por Categoria">
@@ -169,7 +139,7 @@ const Dashboard = () => {
           </div>
         </ChartContainer>
         
-        <ChartContainer title="Receitas vs Despesas">
+        <ChartContainer title="Receitas vs Despesas (Últimos 6 Meses)">
           <div className="h-64">
             <Bar data={incomeVsExpenseData} options={{
               ...chartOptions,
@@ -179,7 +149,7 @@ const Dashboard = () => {
         </ChartContainer>
       </div>
       
-      <ChartContainer title="Tendência de Economia">
+      <ChartContainer title="Tendência de Economia (Últimos 6 Meses)">
         <div className="h-64">
           <Line data={savingsTrendData} options={{
             ...chartOptions,
@@ -191,10 +161,45 @@ const Dashboard = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 my-6">
         <BudgetProgress />
         <TransactionForm />
-       {/* <CategoryManager /> */}
       </div>
       
       <TransactionList />
+      
+      {/* Componente para exibir o histórico mensal */}
+      {monthlyHistory.length > 0 && (
+        <ChartContainer title="Histórico Mensal">
+          <div className="overflow-x-auto mt-4">
+            <table className="min-w-full bg-white dark:bg-gray-800 border dark:border-gray-700">
+              <thead>
+                <tr>
+                  <th className="px-4 py-2 border dark:border-gray-700">Mês</th>
+                  <th className="px-4 py-2 border dark:border-gray-700">Receitas</th>
+                  <th className="px-4 py-2 border dark:border-gray-700">Despesas</th>
+                  <th className="px-4 py-2 border dark:border-gray-700">Saldo</th>
+                </tr>
+              </thead>
+              <tbody>
+                {monthlyHistory.map((item, index) => (
+                  <tr key={index}>
+                    <td className="px-4 py-2 border dark:border-gray-700">{item.month}</td>
+                    <td className="px-4 py-2 border dark:border-gray-700 text-green-600">
+                      R$ {item.totalIncome.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    </td>
+                    <td className="px-4 py-2 border dark:border-gray-700 text-red-600">
+                      R$ {item.totalExpenses.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    </td>
+                    <td className="px-4 py-2 border dark:border-gray-700">
+                      <span className={item.balance >= 0 ? 'text-green-600' : 'text-red-600'}>
+                        R$ {item.balance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </ChartContainer>
+      )}
     </div>
   );
 };

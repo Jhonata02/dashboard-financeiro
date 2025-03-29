@@ -6,6 +6,11 @@ const FinanceContext = createContext();
 export const useFinance = () => useContext(FinanceContext);
 
 export const FinanceProvider = ({ children }) => {
+  // Estado para armazenar o histórico mensal
+  const [monthlyHistory, setMonthlyHistory] = useState(
+    JSON.parse(localStorage.getItem("monthlyHistory")) || []
+  );
+  
   const [balance, setBalance] = useState(
     JSON.parse(localStorage.getItem("balance")) || 25000
   );
@@ -47,6 +52,9 @@ export const FinanceProvider = ({ children }) => {
     endDate: "",
     category: "all"
   });
+  
+  // Força atualização dos gráficos quando o histórico mudar
+  const [chartUpdateTrigger, setChartUpdateTrigger] = useState(0);
 
   // Salva no localStorage sempre que o estado mudar
   useEffect(() => {
@@ -56,7 +64,8 @@ export const FinanceProvider = ({ children }) => {
     localStorage.setItem("budgets", JSON.stringify(budgets));
     localStorage.setItem("notifications", JSON.stringify(notifications));
     localStorage.setItem("alertThreshold", JSON.stringify(alertThreshold));
-  }, [balance, income, expenses, budgets, notifications, alertThreshold]);
+    localStorage.setItem("monthlyHistory", JSON.stringify(monthlyHistory));
+  }, [balance, income, expenses, budgets, notifications, alertThreshold, monthlyHistory]);
 
   // Calcula o total de entradas
   const totalIncome = income.reduce((acc, curr) => acc + curr.amount, 0);
@@ -68,6 +77,63 @@ export const FinanceProvider = ({ children }) => {
   useEffect(() => {
     setBalance(totalIncome - totalExpenses);
   }, [income, expenses]);
+
+  // Função para arquivar os dados do mês atual
+  const archiveCurrentMonth = () => {
+    const currentDate = new Date();
+    const monthYear = currentDate.toLocaleString('default', { month: 'long', year: 'numeric' });
+    
+    // Cria um objeto com os dados do mês atual
+    const monthData = {
+      month: monthYear,
+      date: currentDate.toISOString(),
+      income: [...income],
+      expenses: [...expenses],
+      balance: balance,
+      totalIncome: totalIncome,
+      totalExpenses: totalExpenses,
+      budgets: { ...budgets }
+    };
+    
+    // Verifica se o mês atual já existe no histórico
+    const existingMonthIndex = monthlyHistory.findIndex(item => item.month === monthYear);
+    
+    if (existingMonthIndex >= 0) {
+      // Se o mês já existe, substitui o registro com os dados atualizados
+      setMonthlyHistory(prevHistory => {
+        const updatedHistory = [...prevHistory];
+        updatedHistory[existingMonthIndex] = monthData;
+        return updatedHistory;
+      });
+    } else {
+      // Se o mês não existe, adiciona ao histórico
+      setMonthlyHistory(prevHistory => [...prevHistory, monthData]);
+    }
+    
+    // Força atualização dos gráficos
+    setChartUpdateTrigger(prev => prev + 1);
+    
+    // Resetar os gastos usados nos orçamentos, mantendo os limites
+    const resetBudgets = {};
+    Object.entries(budgets).forEach(([category, budget]) => {
+      resetBudgets[category] = {
+        limit: budget.limit,
+        used: 0
+      };
+    });
+    
+    setBudgets(resetBudgets);
+    
+    // Opcionalmente, pode descomentar estas linhas se quiser limpar também as receitas e despesas
+     setIncome([]);
+     setExpenses([]);
+  };
+
+  // Função para resetar manualmente o mês atual
+  const resetCurrentMonth = () => {
+    archiveCurrentMonth();
+    toast.success("Mês atual arquivado e orçamentos resetados com sucesso!");
+  };
 
   // Adiciona uma nova entrada
   const addIncome = (newIncome) => {
@@ -195,6 +261,54 @@ export const FinanceProvider = ({ children }) => {
     return dateMatch && categoryMatch;
   });
 
+  // Obter dados dos últimos 6 meses (combinando mês atual + histórico)
+  const getLastSixMonthsData = () => {
+    // Certifique-se de que temos dados exclusivos por mês/ano
+    const uniqueMonthlyData = [...monthlyHistory];
+    
+    // Mês atual
+    const currentDate = new Date();
+    const currentMonthYear = currentDate.toLocaleString('default', { month: 'long', year: 'numeric' });
+    const currentMonthShort = currentDate.toLocaleString('default', { month: 'short' });
+    
+    // Verificar se o mês atual já existe no histórico para não duplicar nos gráficos
+    const monthExists = uniqueMonthlyData.some(item => item.month === currentMonthYear);
+    
+    let finalData;
+    if (monthExists) {
+      // Se o mês atual já está no histórico, use apenas dados do histórico
+      finalData = [...uniqueMonthlyData];
+    } else {
+      // Se o mês atual não está no histórico, adicione-o ao conjunto de dados
+      const currentMonthData = {
+        month: currentMonthShort,
+        income: totalIncome,
+        expenses: totalExpenses,
+        balance: balance,
+        // Adicione um campo artificial de data para ordenação
+        sortDate: currentDate.toISOString()
+      };
+      finalData = [...uniqueMonthlyData, { 
+        month: currentMonthYear, 
+        sortDate: currentDate.toISOString(),
+        totalIncome,
+        totalExpenses,
+        balance
+      }];
+    }
+    
+    // Ordenar por data, mais recente primeiro
+    finalData.sort((a, b) => new Date(b.date || b.sortDate) - new Date(a.date || a.sortDate));
+    
+    // Retornar os últimos 6 meses em ordem cronológica
+    return finalData.slice(0, 6).map(item => ({
+      month: new Date(item.date || item.sortDate).toLocaleString('default', { month: 'short' }),
+      income: item.totalIncome,
+      expenses: item.totalExpenses,
+      balance: item.balance
+    })).reverse();
+  };
+
   // Exporta os dados de entradas e despesas para um arquivo CSV
   const exportToCSV = () => {
     // Dados de entrada
@@ -227,6 +341,24 @@ export const FinanceProvider = ({ children }) => {
     expensesDL.click();
     
     toast.success("Dados exportados com sucesso!");
+  };
+
+  // Exportar histórico mensal para CSV
+  const exportHistoryToCSV = () => {
+    let historyCSV = 'Mês,Receitas,Despesas,Saldo\n';
+    monthlyHistory.forEach(item => {
+      historyCSV += `"${item.month}",${item.totalIncome},${item.totalExpenses},${item.balance}\n`;
+    });
+    
+    const historyBlob = new Blob([historyCSV], { type: 'text/csv' });
+    const historyURL = URL.createObjectURL(historyBlob);
+    
+    const historyDL = document.createElement('a');
+    historyDL.href = historyURL;
+    historyDL.download = 'historico_mensal.csv';
+    historyDL.click();
+    
+    toast.success("Histórico mensal exportado com sucesso!");
   };
 
   // Limpa as notificações
@@ -268,7 +400,6 @@ export const FinanceProvider = ({ children }) => {
     return [...new Set([...expenseCategories, ...incomeCategories, ...budgetCategories])];
   };
 
-
   // Verifica os alertas de orçamentos sempre que as despesas mudarem
   useEffect(() => {
     checkBudgetAlerts();
@@ -288,6 +419,8 @@ export const FinanceProvider = ({ children }) => {
         filter,
         filteredIncome,
         filteredExpenses,
+        monthlyHistory,
+        chartUpdateTrigger,
         setFilter,
         addIncome,
         addExpense,
@@ -297,8 +430,11 @@ export const FinanceProvider = ({ children }) => {
         setAlertThreshold,
         clearNotifications,
         exportToCSV,
+        exportHistoryToCSV,
         removeCategory,
-        getAllCategories
+        getAllCategories,
+        resetCurrentMonth,
+        getLastSixMonthsData
       }}
     >
       {children}
