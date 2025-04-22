@@ -124,7 +124,6 @@ export const FinanceProvider = ({ children }) => {
     
     setBudgets(resetBudgets);
     
-    // Opcionalmente, pode descomentar estas linhas se quiser limpar também as receitas e despesas
      setIncome([]);
      setExpenses([]);
   };
