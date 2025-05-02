@@ -9,14 +9,19 @@ const NotificationsPanel = ({ onClose }) => {
 
   return (
     <div 
-      className={`absolute right-0 top-10 w-80 shadow-xl rounded-lg z-50 ${
+      className={`absolute right-0 top-10 w-72 shadow-xl rounded-lg z-50 ${
         darkMode ? 'bg-gray-800' : 'bg-white'
       }`}
+      style={{
+        maxWidth: 'calc(100vw - 20px)',
+        right: '10px'
+      }}
     >
-      <div className="p-4 border-b border-gray-200 flex justify-between items-center">
-        <h3 className="font-semibold flex items-center">
-          <FaBell className="mr-2" /> Notificações
-        </h3>
+      <div className="flex items-center justify-between p-3 border-b border-gray-200">
+        <div className="flex items-center">
+          <FaBell className="mr-2 text-gray-600" /> 
+          <h3 className="font-semibold">Notificações</h3>
+        </div>
         <button 
           onClick={clearNotifications}
           className="text-red-500 hover:text-red-700"
@@ -26,7 +31,7 @@ const NotificationsPanel = ({ onClose }) => {
         </button>
       </div>
       
-      <div className="max-h-96 overflow-y-auto">
+      <div className="max-h-64 overflow-y-auto">
         {notifications.length === 0 ? (
           <div className="p-4 text-center text-gray-500">
             Nenhuma notificação
@@ -36,7 +41,7 @@ const NotificationsPanel = ({ onClose }) => {
             {notifications.map((notification, index) => (
               <li 
                 key={index}
-                className={`p-4 border-b ${
+                className={`p-3 border-b ${
                   darkMode ? 'border-gray-700' : 'border-gray-100'
                 } hover:bg-opacity-50 ${
                   darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'

@@ -65,7 +65,7 @@ const Dashboard = () => {
         }
       ]
     };
-  }, [getLastSixMonthsData, chartUpdateTrigger]); // Adicionado chartUpdateTrigger como dependência
+  }, [getLastSixMonthsData, chartUpdateTrigger]); 
   
   // Gráfico de Tendência de Economia - Dinâmico (usando dados dos últimos 6 meses)
   const savingsTrendData = useMemo(() => {
@@ -83,7 +83,7 @@ const Dashboard = () => {
         }
       ]
     };
-  }, [getLastSixMonthsData, chartUpdateTrigger]); // Adicionado chartUpdateTrigger como dependência
+  }, [getLastSixMonthsData, chartUpdateTrigger]);
   
   const chartOptions = {
     responsive: true,
@@ -119,10 +119,8 @@ const Dashboard = () => {
     <div>
       <h1 className="text-xl sm:text-2xl md:text-3xl font-bold mb-4 sm:mb-6">Dashboard Financeiro</h1>
       
-      {/* Dashboard Metrics */}
       <DashboardMetrics />
       
-      {/* Botão Resetar Mês - Layout para dispositivos móveis (abaixo dos metrics) */}
       <div className="mb-6 sm:hidden">
         <button 
           onClick={resetCurrentMonth}
@@ -132,7 +130,6 @@ const Dashboard = () => {
         </button>
       </div>
       
-      {/* Botão Resetar Mês - Layout para telas maiores (topo da página) */}
       <div className="hidden sm:flex sm:justify-end mb-6">
         <button 
           onClick={resetCurrentMonth}
@@ -178,7 +175,6 @@ const Dashboard = () => {
       
       <TransactionList />
       
-      {/* Componente para exibir o histórico mensal com estilos corrigidos */}
       {monthlyHistory.length > 0 && (
         <ChartContainer title="Histórico Mensal">
           <div className="overflow-x-auto mt-4">
