@@ -41,7 +41,7 @@ const NotificationsPanel = ({ onClose }) => {
             {notifications.map((notification, index) => (
               <li 
                 key={index}
-                className={`p-3 border-b ${
+                className={`p-3 ml-6 border-b ${
                   darkMode ? 'border-gray-700' : 'border-gray-100'
                 } hover:bg-opacity-50 ${
                   darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'
