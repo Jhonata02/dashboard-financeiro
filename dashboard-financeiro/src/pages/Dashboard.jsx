@@ -117,10 +117,23 @@ const Dashboard = () => {
   
   return (
     <div>
-      <h1 className="text-2xl md:text-3xl font-bold mb-6">Dashboard Financeiro</h1>
+      <h1 className="text-xl sm:text-2xl md:text-3xl font-bold mb-4 sm:mb-6">Dashboard Financeiro</h1>
       
-      <div className="mb-6 flex justify-between items-center">
-        <DashboardMetrics />
+      {/* Dashboard Metrics */}
+      <DashboardMetrics />
+      
+      {/* Botão Resetar Mês - Layout para dispositivos móveis (abaixo dos metrics) */}
+      <div className="mb-6 sm:hidden">
+        <button 
+          onClick={resetCurrentMonth}
+          className="w-full bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-colors duration-300"
+        >
+          Resetar Mês Atual
+        </button>
+      </div>
+      
+      {/* Botão Resetar Mês - Layout para telas maiores (topo da página) */}
+      <div className="hidden sm:flex sm:justify-end mb-6">
         <button 
           onClick={resetCurrentMonth}
           className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-colors duration-300"
@@ -165,31 +178,36 @@ const Dashboard = () => {
       
       <TransactionList />
       
-      {/* Componente para exibir o histórico mensal */}
+      {/* Componente para exibir o histórico mensal com estilos corrigidos */}
       {monthlyHistory.length > 0 && (
         <ChartContainer title="Histórico Mensal">
           <div className="overflow-x-auto mt-4">
-            <table className="min-w-full bg-white dark:bg-gray-800 border dark:border-gray-700">
+            <table className={`min-w-full border ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
               <thead>
-                <tr>
-                  <th className="px-4 py-2 border dark:border-gray-700">Mês</th>
-                  <th className="px-4 py-2 border dark:border-gray-700">Receitas</th>
-                  <th className="px-4 py-2 border dark:border-gray-700">Despesas</th>
-                  <th className="px-4 py-2 border dark:border-gray-700">Saldo</th>
+                <tr className={darkMode ? 'bg-gray-900' : 'bg-gray-50'}>
+                  <th className={`px-4 py-2 border text-left ${darkMode ? 'border-gray-700 text-gray-200' : 'border-gray-200 text-gray-700'}`}>Mês</th>
+                  <th className={`px-4 py-2 border text-left ${darkMode ? 'border-gray-700 text-gray-200' : 'border-gray-200 text-gray-700'}`}>Receitas</th>
+                  <th className={`px-4 py-2 border text-left ${darkMode ? 'border-gray-700 text-gray-200' : 'border-gray-200 text-gray-700'}`}>Despesas</th>
+                  <th className={`px-4 py-2 border text-left ${darkMode ? 'border-gray-700 text-gray-200' : 'border-gray-200 text-gray-700'}`}>Saldo</th>
                 </tr>
               </thead>
               <tbody>
                 {monthlyHistory.map((item, index) => (
-                  <tr key={index}>
-                    <td className="px-4 py-2 border dark:border-gray-700">{item.month}</td>
-                    <td className="px-4 py-2 border dark:border-gray-700 text-green-600">
+                  <tr key={index} className={index % 2 === 0 
+                    ? (darkMode ? 'bg-gray-800' : 'bg-white') 
+                    : (darkMode ? 'bg-gray-700' : 'bg-gray-50')
+                  }>
+                    <td className={`px-4 py-2 border ${darkMode ? 'border-gray-700 text-gray-300' : 'border-gray-200 text-gray-800'}`}>
+                      {item.month}
+                    </td>
+                    <td className={`px-4 py-2 border ${darkMode ? 'border-gray-700' : 'border-gray-200'} text-green-500`}>
                       R$ {item.totalIncome.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                     </td>
-                    <td className="px-4 py-2 border dark:border-gray-700 text-red-600">
+                    <td className={`px-4 py-2 border ${darkMode ? 'border-gray-700' : 'border-gray-200'} text-red-500`}>
                       R$ {item.totalExpenses.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                     </td>
-                    <td className="px-4 py-2 border dark:border-gray-700">
-                      <span className={item.balance >= 0 ? 'text-green-600' : 'text-red-600'}>
+                    <td className={`px-4 py-2 border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+                      <span className={item.balance >= 0 ? 'text-green-500' : 'text-red-500'}>
                         R$ {item.balance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                       </span>
                     </td>

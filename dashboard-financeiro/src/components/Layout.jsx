@@ -7,14 +7,12 @@ const Layout = ({ children }) => {
   const { darkMode } = useTheme();
 
   return (
-    <div className={`min-h-screen ${darkMode ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-800'}`}>
+    <div className={`min-h-screen w-full ${darkMode ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-800'}`}>
       <Header />
-      <div className="flex">
+      <div className="flex w-full">
         <Sidebar />
-        <main className="flex-1 p-4 md:p-6">
-          <div className="max-w-7xl mx-auto">
-            {children}
-          </div>
+        <main className="flex-1 p-4 md:p-6 w-full">
+          {children}
         </main>
       </div>
     </div>
