@@ -1,13 +1,15 @@
 import React, { useState } from "react";
-import { FaSort, FaTrash, FaFilter } from "react-icons/fa";
+import { FaSort, FaTrash, FaFilter, FaSearch } from "react-icons/fa";
 import { useTheme } from "../contexts/ThemeContext";
 import { useFinance } from "../contexts/FinanceContext";
 
 const TransactionList = () => {
   const { darkMode } = useTheme();
   const { 
-    income, 
-    expenses, 
+    income,
+    expenses,
+    filteredIncome, 
+    filteredExpenses, 
     deleteIncome, 
     deleteExpense,
     filter,
@@ -18,6 +20,11 @@ const TransactionList = () => {
   const [sortField, setSortField] = useState("date");
   const [sortDirection, setSortDirection] = useState("desc");
   const [showFilters, setShowFilters] = useState(false);
+  const [tempFilter, setTempFilter] = useState({
+    startDate: "",
+    endDate: "",
+    category: "all"
+  });
   
   const handleSort = (field) => {
     if (sortField === field) {
@@ -44,23 +51,33 @@ const TransactionList = () => {
     });
   };
   
-  const handleFilterChange = (e) => {
+  const handleTempFilterChange = (e) => {
     const { name, value } = e.target;
-    setFilter({ ...filter, [name]: value });
+    setTempFilter({ ...tempFilter, [name]: value });
+  };
+  
+  const applyFilters = () => {
+    setFilter(tempFilter);
   };
   
   const resetFilters = () => {
-    setFilter({
+    const emptyFilters = {
       startDate: "",
       endDate: "",
       category: "all"
-    });
+    };
+    setTempFilter(emptyFilters);
+    setFilter(emptyFilters);
   };
   
-  const activeTransactions = activeTab === "expenses" ? expenses : income;
+  const activeTransactions = activeTab === "expenses" ? filteredExpenses : filteredIncome;
   const sortedTransactions = sortTransactions(activeTransactions);
   
-  const categories = [...new Set(activeTransactions.map(item => item.category))];
+  React.useEffect(() => {
+    if (showFilters) {
+      setTempFilter({ ...filter });
+    }
+  }, [showFilters, filter]);
   
   return (
     <div className={`p-6 rounded-lg shadow-lg ${
@@ -93,8 +110,8 @@ const TransactionList = () => {
               <input
                 type="date"
                 name="startDate"
-                value={filter.startDate}
-                onChange={handleFilterChange}
+                value={tempFilter.startDate}
+                onChange={handleTempFilterChange}
                 className={`w-full p-2 rounded ${
                   darkMode ? 'bg-gray-800 border-gray-600' : 'bg-white border-gray-300'
                 } border`}
@@ -106,8 +123,8 @@ const TransactionList = () => {
               <input
                 type="date"
                 name="endDate"
-                value={filter.endDate}
-                onChange={handleFilterChange}
+                value={tempFilter.endDate}
+                onChange={handleTempFilterChange}
                 className={`w-full p-2 rounded ${
                   darkMode ? 'bg-gray-800 border-gray-600' : 'bg-white border-gray-300'
                 } border`}
@@ -118,26 +135,41 @@ const TransactionList = () => {
               <label className="block text-sm mb-1">Categoria</label>
               <select
                 name="category"
-                value={filter.category}
-                onChange={handleFilterChange}
+                value={tempFilter.category}
+                onChange={handleTempFilterChange}
                 className={`w-full p-2 rounded ${
                   darkMode ? 'bg-gray-800 border-gray-600' : 'bg-white border-gray-300'
                 } border`}
               >
                 <option value="all">Todas</option>
-                {categories.map(category => (
+                {(activeTab === "expenses" 
+                  ? [...new Set(expenses.map(item => item.category))]
+                  : [...new Set(income.map(item => item.category))]
+                ).map(category => (
                   <option key={category} value={category}>{category}</option>
                 ))}
               </select>
             </div>
           </div>
           
-          <button
-            onClick={resetFilters}
-            className="mt-2 px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600"
-          >
-            Limpar Filtros
-          </button>
+          <div className="flex mt-4 space-x-2">
+            <button
+              onClick={applyFilters}
+              className={`px-4 py-2 rounded flex items-center ${
+                darkMode ? 'bg-blue-600 hover:bg-blue-700' : 'bg-blue-500 hover:bg-blue-600'
+              } text-white`}
+            >
+              <FaSearch className="mr-2" />
+              Aplicar Filtros
+            </button>
+            
+            <button
+              onClick={resetFilters}
+              className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+            >
+              Limpar Filtros
+            </button>
+          </div>
         </div>
       )}
       
